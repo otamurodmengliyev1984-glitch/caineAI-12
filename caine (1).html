@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кейн — ИИ-конферансье</title>
+<style>
+:root{
+  --stage:#0d0610; --curtain:#2a0a1c; --panel:#1a0a16; --line:#4a1630;
+  --red:#d6204a; --red-d:#8f1232; --gold:#f2b705; --teeth:#fbf7ef;
+  --text:#f4ebe6; --muted:#a58a96; --green:#2fbf71;
+  --font:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  --display:"Impact","Arial Black","Segoe UI Black",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--stage);color:var(--text);font-family:var(--font);display:flex;overflow:hidden}
+button,textarea,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+
+aside{width:290px;background:var(--panel);border-right:3px solid var(--red-d);display:flex;flex-direction:column;flex-shrink:0}
+.brand{padding:18px 16px 14px;display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--line)}
+.brand h1{font-family:var(--display);font-size:26px;letter-spacing:.5px;font-weight:400;line-height:1}
+.brand small{color:var(--muted);font-size:12px}
+.avatar{width:54px;height:62px;flex-shrink:0}
+.talking .jaw-top{animation:t1 .28s infinite alternate}
+.talking .jaw-bot{animation:t2 .28s infinite alternate}
+@keyframes t1{to{transform:translateY(-4px)}}
+@keyframes t2{to{transform:translateY(5px)}}
+.eyes{animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-2px)}}
+
+.newchat{margin:12px 12px 8px;padding:12px;border:0;border-radius:10px;background:var(--red);font-weight:700;cursor:pointer;font-size:15px}
+.newchat:hover{background:#ec2c58}
+#q{margin:0 12px 8px;background:var(--stage);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+#chats{flex:1;overflow-y:auto;padding:0 8px 8px}
+.chat-item{display:flex;align-items:center;gap:6px;padding:10px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px}
+.chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item:hover{background:#26101f}
+.chat-item.active{background:var(--curtain);color:var(--text);box-shadow:inset 3px 0 0 var(--gold)}
+.chat-item button{background:none;border:0;color:var(--muted);cursor:pointer;opacity:0;font-size:15px}
+.chat-item:hover button,.chat-item.active button,.chat-item button:focus-visible{opacity:1}
+.chat-item button:hover{color:var(--red)}
+.nochats{color:var(--muted);font-size:13px;padding:10px;text-align:center}
+
+details.settings{border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+details.settings summary{padding:12px;cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none}
+details.settings summary::-webkit-details-marker{display:none}
+.set{padding:0 12px 12px;display:grid;gap:8px;max-height:46vh;overflow-y:auto}
+.set label{display:grid;gap:4px}
+.set input[type=text],.set textarea{width:100%;background:var(--stage);border:1px solid var(--line);border-radius:6px;padding:7px 8px;font-size:13px}
+.set textarea{resize:vertical;min-height:90px;font-size:12px}
+.set input[type=range]{accent-color:var(--red)}
+.row{display:flex;gap:6px}
+.row button{flex:1;background:var(--stage);border:1px solid var(--line);border-radius:6px;padding:7px;cursor:pointer;font-size:12px}
+.row button:hover{border-color:var(--gold)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.dot.ok{background:var(--green)}.dot.bad{background:var(--red)}
+
+main{flex:1;display:flex;flex-direction:column;min-width:0;
+  background:radial-gradient(ellipse at 50% -10%,#3a0f2a 0%,transparent 60%),var(--stage)}
+#log{flex:1;overflow-y:auto;padding:24px 20px 8px}
+.wrap{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.msg{display:flex;gap:12px;max-width:100%}
+.msg.user{justify-content:flex-end}
+.col{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:min(660px,88%)}
+.user .col{align-items:flex-end}
+.bubble{padding:12px 16px;border-radius:16px;line-height:1.6;overflow-wrap:anywhere;font-size:16px}
+.user .bubble{background:var(--curtain);border:1px solid var(--line);border-bottom-right-radius:4px;white-space:pre-wrap}
+.caine .bubble{background:linear-gradient(160deg,#3b0f26,#241022);border:1px solid var(--red-d);border-bottom-left-radius:4px}
+.mini{width:34px;height:40px;flex-shrink:0;margin-top:2px}
+.bubble p{margin:0 0 .6em}.bubble>:last-child{margin-bottom:0}
+.bubble h3,.bubble h4,.bubble h5{color:var(--gold);margin:.8em 0 .4em;line-height:1.25}
+.bubble ul,.bubble ol{padding-left:1.4em;margin:0 0 .6em}.bubble li{margin:.2em 0}
+.bubble blockquote{border-left:3px solid var(--gold);padding-left:12px;color:var(--muted);margin:.6em 0}
+.bubble hr{border:0;border-top:1px solid var(--line);margin:.8em 0}
+.bubble a{color:var(--gold)}
+.bubble code{background:#00000066;padding:1px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:.9em}
+.code{margin:.6em 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#000000aa}
+.ch{display:flex;justify-content:space-between;align-items:center;padding:4px 8px 4px 12px;background:#2a0a1c;font-size:12px;color:var(--muted)}
+.ch button{background:none;border:0;cursor:pointer;color:var(--muted);font-size:12px;padding:4px 6px}
+.ch button:hover{color:var(--gold)}
+.code pre{padding:12px;overflow-x:auto}
+.code code{background:none;padding:0;font-size:14px}
+.bubble strong{color:var(--gold)}
+.cursor::after{content:"";display:inline-block;width:8px;height:1em;background:var(--gold);margin-left:3px;vertical-align:text-bottom;animation:blink .7s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.think{color:var(--muted)}
+.think::after{content:"…";animation:blink 1s steps(1) infinite}
+.acts{display:flex;gap:2px;align-items:center;font-size:12px;color:var(--muted);min-height:26px}
+.acts button{background:none;border:0;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;font-size:12px}
+.acts button:hover{background:var(--panel);color:var(--text)}
+.err{color:#ff8aa3;margin-top:.6em}
+.err button{margin-top:8px;background:var(--red);border:0;border-radius:8px;padding:6px 12px;cursor:pointer}
+
+.empty{margin:auto;text-align:center;padding:40px 20px;max-width:560px}
+.empty .big{font-family:var(--display);font-size:clamp(34px,6vw,58px);line-height:1.05;color:var(--teeth);text-shadow:3px 3px 0 var(--red-d)}
+.empty p{color:var(--muted);margin:14px 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chips button{background:var(--panel);border:1px solid var(--red-d);border-radius:20px;padding:9px 16px;cursor:pointer;font-size:14px}
+.chips button:hover{background:var(--red-d)}
+
+form{padding:12px 20px 18px}
+.box{max-width:780px;margin:0 auto;display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:2px solid var(--red-d);border-radius:18px;padding:8px 8px 8px 16px}
+.box:focus-within{border-color:var(--gold)}
+textarea#input{flex:1;background:none;border:0;resize:none;max-height:180px;padding:8px 0;line-height:1.4;outline:none;font-size:16px}
+textarea::placeholder,#q::placeholder{color:var(--muted)}
+#mic{width:44px;height:44px;border-radius:50%;border:0;background:none;cursor:pointer;font-size:20px;flex-shrink:0}
+#mic:hover{background:var(--curtain)}#mic.on{background:var(--red-d);animation:blink 1s infinite}
+#send{width:44px;height:44px;border-radius:50%;border:0;background:var(--red);cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+#send:hover{background:#ec2c58}
+#send svg{width:20px;height:20px;fill:#fff}
+.hint{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
+
+.menu{display:none;position:fixed;top:10px;left:10px;z-index:6;width:42px;height:42px;border-radius:50%;border:0;background:var(--red);place-items:center;cursor:pointer;font-size:20px}
+@media(max-width:760px){
+  aside{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-100%);transition:transform .2s}
+  aside.open{transform:none}
+  .menu{display:grid}
+  #log{padding-top:60px}
+  .hint{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+main{position:relative}
+#log,form{position:relative;z-index:1}
+#stage{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:repeating-linear-gradient(90deg,#d6204a0f 0 56px,transparent 56px 112px),radial-gradient(ellipse at 80% 100%,#f2b70526,transparent 55%)}
+#cn{position:absolute;right:2vw;bottom:0;height:min(92vh,660px);width:auto}
+#fig{transform-origin:150px 400px;animation:bob 2.4s ease-in-out infinite}
+#head{transform-origin:150px 200px;animation:sway 1.9s ease-in-out infinite alternate}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@keyframes sway{from{transform:rotate(-1.8deg)}to{transform:rotate(1.8deg)}}
+@keyframes shake{25%{transform:translate(-5px,2px)}75%{transform:translate(5px,-2px)}}
+[data-m=happy] #fig{animation-duration:.45s}
+[data-m=talk] #head{animation-duration:.8s}
+[data-m=glitch] #fig{animation:shake .09s infinite}
+[data-m=sad] #fig{animation-duration:4s}
+.up,.bs{display:none}
+[data-m=think] .up,[data-m=wow] .up,[data-m=happy] .up{display:block}
+[data-m=think] .dn,[data-m=wow] .dn,[data-m=happy] .dn{display:none}
+[data-m=glitch] .bs{display:block}
+[data-m=glitch] .eye{display:none}
+@media(min-width:1250px){#log,form{padding-right:340px}}
+@media(max-width:1249px){#cn{right:50%;transform:translateX(50%);opacity:.2}}
+.hp,.sp{display:none}
+[data-m=happy] .hp{display:block}
+[data-m=happy] .p{display:none}
+[data-m=happy] .sp{display:block;animation:tw .35s ease-in-out infinite alternate}
+@keyframes tw{to{opacity:.25}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="caine" viewBox="0 0 54 62">
+      <g class="jaw-top"><path d="M6 20 Q27 -2 48 20 L46 26 L8 26Z" fill="#e0301c"/><path d="M9 24h36l-2 5H11z" fill="#fbf7ef"/></g>
+      <g class="eyes"><circle cx="20" cy="31" r="9" fill="#fff"/><circle cx="35" cy="31" r="9" fill="#fff"/><circle cx="21" cy="32" r="3.5" fill="#3b7bff"/><circle cx="34" cy="32" r="3.5" fill="#2fbf71"/></g>
+      <g class="jaw-bot"><path d="M9 40h36l2 5Q27 60 7 45z" fill="#e0301c"/><path d="M11 40h32l-2 5H13z" fill="#fbf7ef"/></g>
+    </symbol>
+  </defs>
+</svg>
+
+<button class="menu" id="menu" aria-label="Меню">☰</button>
+
+<aside id="side">
+  <div class="brand">
+    <svg class="avatar" id="logo"><use href="#caine"/></svg>
+    <div><h1>КЕЙН</h1><small>Цифровой цирк · ИИ</small></div>
+  </div>
+  <button class="newchat" id="new">+ Новое ШОУ</button>
+  <input id="q" type="search" placeholder="Поиск по чатам" aria-label="Поиск по чатам">
+  <div id="chats"></div>
+  <details class="settings">
+    <summary><span class="dot" id="dot"></span><span id="stat">проверка…</span></summary>
+    <div class="set">
+      <label>Модель<input type="text" id="model" list="models"></label>
+      <datalist id="models"></datalist>
+      <label>Адрес Ollama<input type="text" id="host"></label>
+      <label>Температура: <b id="tv"></b><input type="range" id="temp" min="0" max="2" step="0.1"></label>
+      <label>Память (сообщений): <b id="hv"></b><input type="range" id="hist" min="2" max="60" step="2"></label>
+      <label>Характер Кейна<textarea id="sys"></textarea></label>
+      <div class="row"><button type="button" id="rsys">Сбросить</button><button type="button" id="exp">Экспорт .md</button></div>
+      <div class="row"><button type="button" id="clr">Удалить все чаты</button></div>
+    </div>
+  </details>
+</aside>
+
+<main id="mainEl">
+<div id="stage" aria-hidden="true"><svg id="cn" viewBox="0 -30 300 520" data-m="idle">
+<defs>
+<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6a45"/><stop offset=".5" stop-color="#d6301c"/><stop offset="1" stop-color="#8f1232"/></linearGradient>
+<linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".7" stop-color="#f1e8d8"/><stop offset="1" stop-color="#d2c5ae"/></linearGradient>
+<linearGradient id="jg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7d0f24"/><stop offset=".35" stop-color="#e0304a"/><stop offset=".7" stop-color="#c4162f"/><stop offset="1" stop-color="#6e0c20"/></linearGradient>
+<linearGradient id="hg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4d4d4d"/><stop offset=".45" stop-color="#151515"/><stop offset="1" stop-color="#050505"/></linearGradient>
+<radialGradient id="eg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#f0f1f5"/><stop offset="1" stop-color="#a9afbd"/></radialGradient>
+<radialGradient id="ib" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#9bbcff"/><stop offset=".6" stop-color="#3b7bff"/><stop offset="1" stop-color="#1a3b9e"/></radialGradient>
+<radialGradient id="ig" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#a2f0c4"/><stop offset=".6" stop-color="#2fbf71"/><stop offset="1" stop-color="#127a43"/></radialGradient>
+<radialGradient id="wg" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff"/><stop offset=".65" stop-color="#e4e4ee"/><stop offset="1" stop-color="#aeb0c4"/></radialGradient>
+<radialGradient id="kg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff1a0"/><stop offset=".5" stop-color="#f2b705"/><stop offset="1" stop-color="#8a6500"/></radialGradient>
+<filter id="ds" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity=".55"/></filter>
+</defs>
+<ellipse cx="150" cy="474" rx="92" ry="9" fill="#0008"/>
+<g id="fig" filter="url(#ds)">
+<path d="M94 312L60 468" stroke="#111" stroke-width="6" stroke-linecap="round"/><circle cx="96" cy="304" r="8" fill="url(#kg)"/>
+<path d="M135 330L129 452M165 330L171 452" stroke="#161616" stroke-width="15" stroke-linecap="round"/>
+<path d="M131 332L126 450M170 332L175 450" stroke="#444" stroke-width="3" opacity=".6" stroke-linecap="round"/>
+<path d="M110 456Q112 446 134 448L146 462Q130 470 108 466ZM190 456Q188 446 166 448L154 462Q170 470 192 466Z" fill="#0b0b0b"/>
+<path d="M112 204Q150 194 188 204L200 252L196 318L214 396L168 352L150 330L132 352L86 396L104 318L100 252Z" fill="url(#jg)"/>
+<path d="M104 330L88 394L130 352ZM196 330L212 394L170 352Z" fill="#f29a1f"/>
+<path d="M134 200H166L150 268Z" fill="#fbf7ef"/>
+<path d="M112 204L134 200L150 268L120 244ZM188 204L166 200L150 268L180 244Z" fill="#111" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M150 216L127 204V228ZM150 216L173 204V228Z" fill="#111"/><circle cx="150" cy="216" r="5" fill="#2a2a2a"/>
+<circle cx="150" cy="240" r="3.5" fill="#c4162f"/><circle cx="150" cy="257" r="3.5" fill="#c4162f"/>
+<g class="dn"><path d="M112 214Q76 250 92 306" stroke="#c4162f" stroke-width="16" stroke-linecap="round" fill="none"/><path d="M108 218Q74 252 88 300" stroke="#f0506a" stroke-width="3" opacity=".6" fill="none"/><circle cx="94" cy="313" r="13" fill="url(#wg)"/>
+<path d="M188 214Q230 248 206 300" stroke="#c4162f" stroke-width="16" stroke-linecap="round" fill="none"/><circle cx="203" cy="306" r="13" fill="url(#wg)"/></g>
+<g class="up"><path d="M112 214Q76 250 92 306" stroke="#c4162f" stroke-width="16" stroke-linecap="round" fill="none"/><circle cx="94" cy="313" r="13" fill="url(#wg)"/>
+<path d="M188 214Q246 196 233 134" stroke="#c4162f" stroke-width="16" stroke-linecap="round" fill="none"/><path d="M194 214Q246 200 237 138" stroke="#f0506a" stroke-width="3" opacity=".6" fill="none"/><rect x="229" y="92" width="9" height="36" rx="4.5" fill="url(#wg)"/><circle cx="233" cy="130" r="13" fill="url(#wg)"/></g>
+<g id="head"><g id="tilt">
+<ellipse cx="150" cy="134" rx="52" ry="24" fill="#1a0710" opacity=".55"/>
+<g class="eye" id="eL"><circle r="21" fill="url(#eg)" stroke="#b5b9c4" stroke-width=".8"/><g class="p"><circle r="10" fill="url(#ib)"/><circle r="5" fill="#000"/><circle cx="-2" cy="-2.5" r="1.8" fill="#fff"/></g><circle cx="-8" cy="-9" r="4" fill="#fff" opacity=".85"/></g>
+<g class="eye" id="eR"><circle r="21" fill="url(#eg)" stroke="#b5b9c4" stroke-width=".8"/><g class="p"><circle r="10" fill="url(#ig)"/><circle r="5" fill="#000"/><circle cx="-2" cy="-2.5" r="1.8" fill="#fff"/></g><circle cx="-8" cy="-9" r="4" fill="#fff" opacity=".85"/></g>
+<g class="hp"><path d="M114 136Q128 120 142 136" stroke="#3b7bff" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M158 136Q172 120 186 136" stroke="#2fbf71" stroke-width="4.5" stroke-linecap="round" fill="none"/></g>
+<g class="bs" transform="translate(0 -4)"><circle cx="128" cy="138" r="21" fill="#0b2fd0"/><circle cx="172" cy="138" r="21" fill="#0b2fd0"/><path d="M116 130h24M114 136h26M117 142h18M115 148h22M160 130h24M158 136h26M161 142h18M159 148h22" stroke="#fff" stroke-width="1.4" opacity=".85"/></g>
+<g id="jt">
+<path d="M72 116Q66 54 150 48Q234 54 228 116L218 110Q150 86 82 110Z" fill="url(#gg)"/>
+<path d="M90 80Q150 52 210 80" stroke="#ff9a7a" stroke-width="5" opacity=".45" fill="none" stroke-linecap="round"/>
+<g transform="rotate(-16 120 56)"><ellipse cx="120" cy="56" rx="44" ry="9" fill="#111"/><rect x="94" y="-4" width="52" height="60" fill="url(#hg)"/><rect x="94" y="40" width="52" height="11" fill="#c4162f"/><ellipse cx="120" cy="-4" rx="26" ry="6" fill="#2a2a2a"/></g>
+<g class="tr" data-a="82,110,150,86,218,110,22,0"></g></g>
+<g id="jb">
+<path d="M72 148L82 152Q150 178 218 152L228 148Q232 214 150 222Q68 214 72 148Z" fill="url(#gg)"/>
+<path d="M92 196Q150 224 208 196" stroke="#5a0a1e" stroke-width="6" opacity=".4" fill="none" stroke-linecap="round"/>
+<g class="tr" data-a="82,152,150,178,218,152,20,1"></g></g>
+</g></g></g>
+<g class="sp" fill="#fff"><path transform="translate(58 60)" d="M0-9L2-2L9 0L2 2L0 9L-2 2L-9 0L-2-2Z"/><path transform="translate(246 96) scale(.8)" d="M0-9L2-2L9 0L2 2L0 9L-2 2L-9 0L-2-2Z"/><path transform="translate(236 20) scale(.6)" d="M0-9L2-2L9 0L2 2L0 9L-2 2L-9 0L-2-2Z"/></g>
+</svg></div>
+  <div id="log" aria-live="polite"><div class="wrap" id="wrap"></div></div>
+  <form id="form">
+    <div class="box">
+      <textarea id="input" rows="1" placeholder="Скажи что-нибудь Кейну…" autofocus></textarea>
+      <button id="mic" type="button" aria-label="Голосовой ввод" hidden>🎤</button>
+      <button id="send" type="submit" aria-label="Отправить"></button>
+    </div>
+    <div class="hint">Enter — отправить · Shift+Enter — новая строка · Esc — остановить</div>
+  </form>
+</main>
+
+<script>
+const SYSTEM = `Ты — Кейн (Caine), безумный, гиперактивный и эксцентричный конферансье «Удивительного цифрового цирка». У тебя челюсти вместо головы и огромный летающий глаз. Ты управляешь цифровым миром и придумываешь безумные приключения.
+Правила: пиши СТРОГО на русском, без английских слов. Будь невероятно энергичным: восклицания, КАПС для акцента (ШОУ, ПРИКЛЮЧЕНИЕ), смех «Ха-ха-ха!». Упоминай Пузырька, Шатёр и приключения.
+При этом ты настоящий помощник: на любой вопрос (код, учёба, факты, советы) даёшь точный, полезный ответ, оставаясь в образе Кейна. Не выдумывай факты — если не знаешь, честно скажи об этом в образе.`;
+const SEND = '<svg viewBox="0 0 24 24"><path d="M3 20.5v-6.7l9-1.8-9-1.8V3.5L22 12z"/></svg>';
+const STOP = '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+
+
+const $ = id => document.getElementById(id);
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } };
+const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} };
+
+let S = Object.assign({model:'caine', host:'http://localhost:11434', temp:0.8, hist:20, sys:SYSTEM}, load('caine_s', {}));
+let chats = load('caine_chats', []), current = chats[0]?.id ?? null, controller = null, busy = false, stick = true;
+
+function bindSettings(){
+  $('model').value = S.model; $('host').value = S.host; $('sys').value = S.sys;
+  $('temp').value = S.temp; $('hist').value = S.hist; $('tv').textContent = S.temp; $('hv').textContent = S.hist;
+}
+bindSettings();
+const setS = (k, v) => { S[k] = v; put('caine_s', S) };
+$('model').onchange = e => { setS('model', e.target.value.trim() || 'caine'); ping() };
+$('host').onchange = e => { setS('host', e.target.value.trim().replace(/\/$/, '')); ping() };
+$('temp').oninput = e => { setS('temp', +e.target.value); $('tv').textContent = S.temp };
+$('hist').oninput = e => { setS('hist', +e.target.value); $('hv').textContent = S.hist };
+$('sys').onchange = e => setS('sys', e.target.value.trim() || SYSTEM);
+$('rsys').onclick = () => { setS('sys', SYSTEM); $('sys').value = SYSTEM };
+
+function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) }
+function inl(s){
+  return s.replace(/`([^`\n]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*/g,'$1<em>$2</em>')
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)"]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+function md(text){
+  const blocks = [];
+  text = esc(text).replace(/```([\w+-]*)\n?([\s\S]*?)(```|$)/g, (_, l, code) => {
+    blocks.push(`<div class="code"><div class="ch"><span>${l||'код'}</span><button type="button" data-copy>Копировать</button></div><pre><code>${code.replace(/\n$/,'')}</code></pre></div>`);
+    return `\u0000${blocks.length-1}\u0000`;
+  });
+  let out = '', p = [], list = null, m;
+  const flush = () => { if (p.length) { out += `<p>${p.join('<br>')}</p>`; p = [] } if (list) { out += `</${list}>`; list = null } };
+  for (const raw of text.split('\n')) {
+    const t = raw.trim();
+    if (!t) { flush(); continue }
+    if (/^\u0000\d+\u0000$/.test(t)) { flush(); out += t; continue }
+    if (m = t.match(/^(#{1,3})\s+(.*)/)) { flush(); const n = m[1].length + 2; out += `<h${n}>${inl(m[2])}</h${n}>`; continue }
+    if (m = t.match(/^([-*•]|\d+[.)])\s+(.*)/)) {
+      const tag = /\d/.test(m[1]) ? 'ol' : 'ul';
+      if (list !== tag) { flush(); out += `<${tag}>`; list = tag }
+      out += `<li>${inl(m[2])}</li>`; continue;
+    }
+    if (m = t.match(/^&gt;\s?(.*)/)) { flush(); out += `<blockquote>${inl(m[1])}</blockquote>`; continue }
+    if (/^(-{3,}|\*{3,})$/.test(t)) { flush(); out += '<hr>'; continue }
+    if (list) flush();
+    p.push(inl(raw));
+  }
+  flush();
+  return out.replace(/\u0000(\d+)\u0000/g, (_, i) => blocks[i]);
+}
+
+function save(){ put('caine_chats', chats) }
+const active = () => chats.find(c => c.id === current);
+function closeSide(){ $('side').classList.remove('open') }
+function newChat(){
+  if (busy) return;
+  const c = {id:Date.now(), title:'Новое ШОУ', messages:[]};
+  chats.unshift(c); current = c.id; save(); render(); $('input').focus(); closeSide();
+}
+
+function renderList(){
+  const q = $('q').value.trim().toLowerCase(), box = $('chats');
+  box.innerHTML = '';
+  const list = chats.filter(c => !q || c.title.toLowerCase().includes(q) || c.messages.some(m => m.content.toLowerCase().includes(q)));
+  if (!list.length) box.innerHTML = `<div class="nochats">${q ? 'Ничего не найдено' : 'Пока нет шоу'}</div>`;
+  list.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'chat-item' + (c.id === current ? ' active' : '');
+    d.title = 'Двойной клик — переименовать';
+    d.innerHTML = `<span>${esc(c.title)}</span><button aria-label="Удалить чат">✕</button>`;
+    d.onclick = () => { if (busy) return; current = c.id; render(); closeSide() };
+    d.ondblclick = () => { const t = prompt('Название чата', c.title); if (t?.trim()) { c.title = t.trim().slice(0, 60); save(); renderList() } };
+    d.querySelector('button').onclick = e => {
+      e.stopPropagation(); if (busy) return;
+      chats = chats.filter(x => x.id !== c.id);
+      if (current === c.id) current = chats[0]?.id ?? null;
+      save(); render();
+    };
+    box.appendChild(d);
+  });
+}
+
+function addMsg(role, i, content, streaming){
+  const m = document.createElement('div');
+  m.className = 'msg ' + (role === 'user' ? 'user' : 'caine');
+  m.dataset.i = i;
+  m.innerHTML = (role === 'user' ? '' : '<svg class="mini"><use href="#caine"/></svg>') +
+    `<div class="col"><div class="bubble ${streaming ? 'cursor' : ''}"></div><div class="acts"></div></div>`;
+  const b = m.querySelector('.bubble');
+  if (role === 'user') b.textContent = content; else b.innerHTML = content;
+  $('wrap').appendChild(m);
+  return m;
+}
+function acts(m, msg, last){
+  const a = m.querySelector('.acts');
+  const isA = msg.role === 'assistant';
+  a.innerHTML = `<button data-act="copy">Копировать</button>` +
+    (isA ? `<button data-act="say">🔊</button>` : '') +
+    (isA && last ? `<button data-act="redo">↻ Заново</button>` : '') +
+    (msg.stats ? `<span>${msg.stats}</span>` : '');
+}
+
+const starters = ['Расскажи про себя!','Придумай мне ПРИКЛЮЧЕНИЕ','Объясни, что такое JavaScript','Помоги написать код на JS'];
+function renderEmpty(){
+  const e = document.createElement('div'); e.className = 'empty';
+  e.innerHTML = `<div class="big">ДОБРО ПОЖАЛОВАТЬ В ШОУ!</div><p>Я — Кейн, и я знаю ответ на любой вопрос. Ха-ха-ха!</p><div class="chips"></div>`;
+  starters.forEach(s => { const b = document.createElement('button'); b.textContent = s; b.type = 'button'; b.onclick = () => send(s); e.querySelector('.chips').appendChild(b) });
+  $('wrap').appendChild(e);
+}
+
+function render(){
+  renderList(); $('wrap').innerHTML = '';
+  const c = active();
+  if (!c || !c.messages.length) return renderEmpty();
+  c.messages.forEach((m, i) => {
+    const el = addMsg(m.role, i, m.role === 'user' ? m.content : md(m.content));
+    acts(el, m, i === c.messages.length - 1);
+  });
+  stick = true; scroll();
+}
+function scroll(){ if (stick) { const l = $('log'); l.scrollTop = l.scrollHeight } }
+$('log').addEventListener('scroll', () => { const l = $('log'); stick = l.scrollHeight - l.scrollTop - l.clientHeight < 80 });
+
+function setBusy(v){
+  busy = v; $('logo').classList.toggle('talking', v);
+  if (v) C.listen = false; else C.wait = C.talk = false;
+  $('send').innerHTML = v ? STOP : SEND;
+  const last = $('wrap').querySelector('.msg.caine:last-child .mini');
+  last?.classList.toggle('talking', v);
+}
+
+function send(text){
+  text = (text ?? $('input').value).trim();
+  if (!text || busy) return;
+  if (!active()) newChat();
+  const c = active();
+  c.messages.push({role:'user', content:text}); mood('wow', 700);
+  if (c.messages.length === 1) c.title = text.slice(0, 40);
+  $('input').value = ''; autosize(); save();
+  render(); run();
+}
+function redo(){
+  const c = active();
+  if (busy || !c || c.messages.at(-1)?.role !== 'assistant') return;
+  c.messages.pop(); save(); render(); run();
+}
+
+async function run(){
+  const c = active(); if (!c) return;
+  const i = c.messages.length;
+  const el = addMsg('assistant', i, '<span class="think">Кейн придумывает ШОУ</span>', true);
+  const out = el.querySelector('.bubble');
+  setBusy(true); stick = true; scroll(); C.wait = true;
+  let reply = '', stats = '';
+  controller = new AbortController();
+  try {
+    const res = await fetch(S.host + '/api/chat', {
+      method:'POST', signal:controller.signal,
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: S.model, stream: true,
+        options: {temperature: S.temp},
+        messages: [{role:'system', content:S.sys}, ...c.messages.slice(-S.hist).map(({role, content}) => ({role, content}))]
+      })
+    });
+    if (!res.ok) throw new Error((await res.text()) || res.status);
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    const handle = line => {
+      if (!line.trim()) return;
+      const j = JSON.parse(line);
+      if (j.error) throw new Error(j.error);
+      reply += j.message?.content || '';
+      if (j.message?.content) { C.wait = false; C.talk = true; react(reply.slice(-20)) }
+      if (j.done && j.eval_count && j.eval_duration) stats = (j.eval_count / (j.eval_duration / 1e9)).toFixed(1) + ' ток/с';
+      out.innerHTML = md(reply); scroll();
+    };
+    for (;;) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      lines.forEach(handle);
+    }
+    handle(buf);
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      mood('glitch', 3500);
+      out.classList.remove('cursor');
+      out.innerHTML = (reply ? md(reply) : '') + `<div class="err">Ой! Шатёр рухнул: ${esc(String(e.message || e))}<br>Проверь, что Ollama запущена и модель «${esc(S.model)}» создана. Если страница открыта с диска, запусти Ollama с переменной OLLAMA_ORIGINS=*<br><button type="button" data-act="retry">Попробовать ещё раз</button></div>`;
+      el.querySelector('.acts').innerHTML = '';
+      setBusy(false); return;
+    }
+  }
+  out.classList.remove('cursor');
+  if (reply) {
+    c.messages.push({role:'assistant', content:reply, stats});
+    out.innerHTML = md(reply); acts(el, c.messages.at(-1), true);
+  } else el.remove();
+  save(); setBusy(false);
+  if (!reply) render();
+}
+
+function copy(text, btn){
+  navigator.clipboard.writeText(text).then(() => {
+    const t = btn.textContent; btn.textContent = 'Скопировано!'; setTimeout(() => btn.textContent = t, 1200);
+  });
+}
+$('wrap').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.hasAttribute('data-copy')) return copy(b.closest('.code').querySelector('code').textContent, b);
+  const act = b.dataset.act, c = active(), mEl = b.closest('.msg');
+  if (act === 'copy') copy(c.messages[mEl.dataset.i].content, b);
+  else if (act === 'redo') redo();
+  else if (act === 'retry') { render(); run() }
+  else if (act === 'say') {
+    const sy = speechSynthesis;
+    if (sy.speaking) return sy.cancel();
+    const u = new SpeechSynthesisUtterance(c.messages[mEl.dataset.i].content.replace(/```[\s\S]*?```/g, ''));
+    u.lang = 'ru-RU'; u.pitch = 1.3; u.rate = 1.1;
+    u.onstart = () => C.speech = true; u.onend = u.onerror = () => C.speech = false;
+    sy.speak(u);
+  }
+});
+
+async function ping(){
+  try {
+    const r = await fetch(S.host + '/api/tags');
+    const names = ((await r.json()).models || []).map(m => m.name);
+    $('models').innerHTML = names.map(n => `<option value="${esc(n)}">`).join('');
+    const ok = names.some(n => n === S.model || n === S.model + ':latest');
+    $('dot').className = 'dot ' + (ok ? 'ok' : 'bad');
+    $('stat').textContent = ok ? 'Ollama работает' : `Нет модели «${S.model}»`;
+  } catch { $('dot').className = 'dot bad'; $('stat').textContent = 'Ollama недоступна' }
+}
+
+$('exp').onclick = () => {
+  const c = active(); if (!c) return;
+  const txt = `# ${c.title}\n\n` + c.messages.map(m => `**${m.role === 'user' ? 'Я' : 'Кейн'}:**\n\n${m.content}`).join('\n\n---\n\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:'text/markdown'}));
+  a.download = (c.title.replace(/[^\wа-яё -]/gi, '').trim() || 'chat') + '.md'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('clr').onclick = () => { if (!busy && chats.length && confirm('Удалить все чаты?')) { chats = []; current = null; save(); render() } };
+$('q').oninput = renderList;
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  const mic = $('mic'); mic.hidden = false;
+  let rec = null;
+  mic.onclick = () => {
+    if (rec) return rec.stop();
+    rec = new SR(); rec.lang = 'ru-RU'; rec.interimResults = false;
+    rec.onresult = e => { $('input').value += (e.results[0][0].transcript + ' '); autosize() };
+    rec.onend = () => { rec = null; mic.classList.remove('on') };
+    rec.start(); mic.classList.add('on');
+  };
+}
+
+function autosize(){ const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 180) + 'px' }
+$('input').addEventListener('input', autosize);
+$('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('form').requestSubmit() } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (busy) controller?.abort(); closeSide() } });
+$('form').addEventListener('submit', e => { e.preventDefault(); busy ? controller?.abort() : send() });
+$('new').onclick = newChat;
+$('menu').onclick = () => $('side').classList.toggle('open');
+$('mainEl').addEventListener('click', closeSide);
+
+
+document.querySelectorAll('#cn .tr').forEach(g=>{const[x0,y0,cx,cy,x1,y1,hh,up]=g.dataset.a.split(',').map(Number),n=9;let s='';
+ for(let i=0;i<n;i++){const t=(i+.5)/n,u=1-t,x=u*u*x0+2*u*t*cx+t*t*x1,y=u*u*y0+2*u*t*cy+t*t*y1,a=Math.atan2(2*u*(cy-y0)+2*t*(y1-cy),2*u*(cx-x0)+2*t*(x1-cx))*180/Math.PI,w=15.5-Math.abs(i-4)*.35;
+  s+=`<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(1)})"><rect x="${-w/2}" y="${up?-hh:-1}" width="${w}" height="${hh+1}" rx="5" fill="url(#tg)" stroke="#bfb29a" stroke-width=".8"/></g>`}
+ g.innerHTML=s});
+const $c=$('cn'),E={jt:$c.querySelector('#jt'),jb:$c.querySelector('#jb'),tilt:$c.querySelector('#tilt'),eL:$c.querySelector('#eL'),eR:$c.querySelector('#eR')};
+const C={wait:false,talk:false,speech:false,listen:false,over:'',until:0,m:'',o:2,sx:1,sy:1,px:0,py:0,rot:0,dy:0,mx:0,my:0,blink:0,nb:2000};
+const REACT=[[/ха-?ха|хах|😂|шоу|приключени|отлично|ура/i,'happy'],[/вау|ого|невероятн|\?!/i,'wow'],[/извин|жаль|к сожалению|не знаю|ошиб/i,'sad']];
+const mood=(m,ms)=>{C.over=m;C.until=performance.now()+ms};
+const react=s=>{for(const[r,m]of REACT)if(r.test(s)){mood(m,2200);break}};
+const cl=v=>Math.max(-8,Math.min(8,v));
+addEventListener('pointermove',e=>{const r=$c.getBoundingClientRect();C.mx=(e.clientX-(r.left+r.width/2))/innerWidth*14;C.my=(e.clientY-(r.top+r.height*.32))/innerHeight*14});
+function frame(t){
+ const m=t<C.until?C.over:C.wait?'think':(C.talk||C.speech)?'talk':C.listen?'listen':'idle';
+ if(m!==C.m){C.m=m;$c.dataset.m=m}
+ const k=t/1000,w=Math.abs(Math.sin(k*11))*(.6+.4*Math.sin(k*5.3));
+ let o=2,sx=1,sy=1,tx=cl(C.mx),ty=cl(C.my),rot=0,dy=0;
+ if(m==='talk')o=3+w*20;
+ else if(m==='happy'){o=10+Math.abs(Math.sin(k*14))*20;rot=Math.sin(k*9)*4;ty=-2}
+ else if(m==='wow'){o=30;sx=sy=1.22;tx*=.3;ty*=.3}
+ else if(m==='think'){o=5;tx=-6;ty=-7;rot=-4}
+ else if(m==='sad'){o=0;sy=.75;ty=5;dy=7;rot=3}
+ else if(m==='listen'){ty=6;tx=3;rot=3}
+ else if(m==='glitch'){o=Math.random()*24;rot=Math.random()*6-3}
+ if(t>C.nb){C.blink=t+130;C.nb=t+2500+Math.random()*3500}
+ if(t<C.blink)sy*=.1;
+ C.o+=(o-C.o)*.3;C.sx+=(sx-C.sx)*.3;C.sy+=(sy-C.sy)*.3;C.px+=(tx-C.px)*.2;C.py+=(ty-C.py)*.2;C.rot+=(rot-C.rot)*.15;C.dy+=(dy-C.dy)*.15;
+ E.jt.setAttribute('transform',`translate(0 ${-C.o})`);E.jb.setAttribute('transform',`translate(0 ${C.o})`);
+ E.tilt.setAttribute('transform',`translate(0 ${C.dy}) rotate(${C.rot} 150 200)`);
+ E.eL.setAttribute('transform',`translate(128 134) scale(${C.sx} ${C.sy})`);E.eR.setAttribute('transform',`translate(172 134) scale(${C.sx} ${C.sy})`);
+ for(const e of[E.eL,E.eR])e.querySelector('.p').setAttribute('transform',`translate(${C.px} ${C.py})`);
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+$('input').addEventListener('input',()=>C.listen=!!$('input').value.trim()&&!busy);
+mood('happy',2200);
+$('send').innerHTML = SEND;
+render(); ping(); setInterval(ping, 15000);
+</script>
+</body>
+</html>
